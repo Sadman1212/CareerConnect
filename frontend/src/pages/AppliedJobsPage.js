@@ -3,22 +3,28 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 
+
 const AppliedJobsPage = () => {
   const navigate = useNavigate();
+
 
   const storedProfile = localStorage.getItem("profile");
   const profile = storedProfile ? JSON.parse(storedProfile) : null;
   const avatarUrl = profile?.imageUrl || null;
 
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+
 
   // One fullscreen modal for both images and PDFs
   // { type: "image" | "pdf", url: string } or null
   const [fullDoc, setFullDoc] = useState(null);
 
+
   const [selectedApplication, setSelectedApplication] = useState(null);
+
 
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
@@ -27,11 +33,13 @@ const AppliedJobsPage = () => {
     loading: false,
   });
 
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("profile");
     navigate("/");
   };
+
 
   const fetchApplications = async () => {
     try {
@@ -49,17 +57,22 @@ const AppliedJobsPage = () => {
     }
   };
 
+
   useEffect(() => {
     fetchApplications();
   }, []);
 
+
   const handleDeleteApplication = async () => {
     if (!deleteModal.applicationId) return;
 
+
     setDeleteModal((prev) => ({ ...prev, loading: true }));
+
 
     try {
       const token = localStorage.getItem("token");
+
 
       await axios.delete(
         `${API_BASE_URL}/applications/${deleteModal.applicationId}`,
@@ -70,9 +83,11 @@ const AppliedJobsPage = () => {
         }
       );
 
+
       setApplications((prev) =>
         prev.filter((app) => app._id !== deleteModal.applicationId)
       );
+
 
       setDeleteModal({
         isOpen: false,
@@ -81,6 +96,7 @@ const AppliedJobsPage = () => {
         loading: false,
       });
 
+
       alert("Application deleted successfully!");
     } catch (error) {
       console.error("Error deleting application:", error);
@@ -88,6 +104,7 @@ const AppliedJobsPage = () => {
       setDeleteModal((prev) => ({ ...prev, loading: false }));
     }
   };
+
 
   const openDeleteModal = (applicationId, jobTitle) => {
     setDeleteModal({
@@ -98,16 +115,19 @@ const AppliedJobsPage = () => {
     });
   };
 
+
   const getImageUrl = (path) => {
     if (!path) return null;
     if (path.startsWith("http")) return path;
     return `${API_BASE_URL.replace("/api", "")}/${path}`;
   };
 
+
   const isPdfFile = (url) => {
     if (!url) return false;
     return url.toLowerCase().endsWith(".pdf");
   };
+
 
   const getStatusClasses = (status) => {
     if (status === "shortlisted") return "bg-blue-600 text-white";
@@ -116,9 +136,11 @@ const AppliedJobsPage = () => {
     return "bg-slate-200 text-slate-800";
   };
 
+
   const toggleDetails = (id) => {
     setSelectedApplication((prev) => (prev === id ? null : id));
   };
+
 
   // open fullscreen modal for image or pdf
   const openFullDoc = (type, path) => {
@@ -127,7 +149,9 @@ const AppliedJobsPage = () => {
     setFullDoc({ type, url });
   };
 
+
   const closeFullDoc = () => setFullDoc(null);
+
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900">
@@ -144,6 +168,7 @@ const AppliedJobsPage = () => {
             >
               ✕ Close
             </button>
+
 
             {fullDoc.type === "image" ? (
               <img
@@ -163,6 +188,7 @@ const AppliedJobsPage = () => {
           </div>
         </div>
       )}
+
 
       {/* Delete Confirmation Modal */}
       {deleteModal.isOpen && (
@@ -205,9 +231,11 @@ const AppliedJobsPage = () => {
         </div>
       )}
 
+
       {/* Top bar */}
       <header className="w-full flex items-center justify-between px-8 py-3 bg-slate-900 text-white relative">
         <h1 className="text-2xl font-semibold">CareerConnect</h1>
+
 
         <div className="flex items-center gap-4 relative">
           <div className="flex items-center bg-white rounded-full px-3 py-1">
@@ -219,12 +247,14 @@ const AppliedJobsPage = () => {
             />
           </div>
 
+
           <button
             className="text-2xl font-bold relative"
             onClick={() => setMenuOpen((prev) => !prev)}
           >
             ☰
           </button>
+
 
           {menuOpen && (
             <div className="absolute right-0 top-10 bg-white text-gray-800 rounded-md shadow-lg py-2 w-40 z-10">
@@ -248,6 +278,7 @@ const AppliedJobsPage = () => {
         </div>
       </header>
 
+
       <div className="flex flex-1">
         {/* Left sidebar */}
         <aside className="w-52 bg-slate-900 text-white pt-6 sticky top-0 self-start h-screen">
@@ -269,6 +300,7 @@ const AppliedJobsPage = () => {
             </span>
           </div>
 
+
           <nav className="flex flex-col text-sm">
             <button
               className="text-left px-4 py-2 hover:bg-slate-800"
@@ -282,14 +314,18 @@ const AppliedJobsPage = () => {
             >
               Applied Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/followed-jobs")}
+            >
               Followed Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
-              Messages
-            </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
+            
+            <button 
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/query-forum")}>
               Query Forum
+              
             </button>
             <button
               className="text-left px-4 py-2 hover:bg-slate-800"
@@ -297,8 +333,21 @@ const AppliedJobsPage = () => {
             >
               Profile
             </button>
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/view-career-events")}
+            >
+              View CareerEvents
+            </button>
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/registered-events")}
+            >
+              Registered Events
+            </button>
           </nav>
         </aside>
+
 
         {/* Main content */}
         <main className="flex-1 bg-gradient-to-b from-gray-100 to-gray-300 py-8 px-4 md:px-8">
@@ -311,10 +360,12 @@ const AppliedJobsPage = () => {
               </div>
             )}
 
+
             <div className="bg-white rounded-2xl shadow-2xl p-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">
                 List of your applied jobs:
               </h2>
+
 
               {loading ? (
                 <p className="text-gray-600 text-center py-12">
@@ -340,6 +391,7 @@ const AppliedJobsPage = () => {
                             {index + 1}.
                           </span>
 
+
                           <div className="bg-slate-800 text-white rounded-md shadow-md flex items-center h-16 px-5 mr-4">
                             <div className="w-12 h-12 bg-blue-400 rounded-md flex items-center justify-center overflow-hidden">
                               {app.companyId?.imageUrl ? (
@@ -361,6 +413,7 @@ const AppliedJobsPage = () => {
                             </div>
                           </div>
 
+
                           <div className="flex-1">
                             <p className="text-sm text-gray-600">Job Title:</p>
                             <p className="text-base font-semibold text-gray-800">
@@ -368,6 +421,7 @@ const AppliedJobsPage = () => {
                             </p>
                           </div>
                         </div>
+
 
                         {/* Right side */}
                         <div className="text-right ml-4">
@@ -401,6 +455,7 @@ const AppliedJobsPage = () => {
                         </div>
                       </div>
 
+
                       {/* View details */}
                       <div className="mt-4 border-t pt-4">
                         <button
@@ -411,6 +466,7 @@ const AppliedJobsPage = () => {
                             ? "Hide Details ▲"
                             : "View Uploaded Documents ▼"}
                         </button>
+
 
                         {selectedApplication === app._id && (
                           <div className="mt-4 space-y-4">
@@ -447,6 +503,7 @@ const AppliedJobsPage = () => {
                                 </div>
                               )}
                             </div>
+
 
                             {/* Recommendation Letters */}
                             {app.recommendationLetters &&
@@ -490,6 +547,7 @@ const AppliedJobsPage = () => {
                                   </div>
                                 </div>
                               )}
+
 
                             {/* Career Summary */}
                             {app.careerSummary &&
@@ -548,7 +606,5 @@ const AppliedJobsPage = () => {
   );
 };
 
+
 export default AppliedJobsPage;
-
-
-

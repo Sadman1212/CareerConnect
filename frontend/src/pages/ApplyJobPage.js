@@ -47,7 +47,7 @@ const ApplyJobPage = () => {
         return;
       }
       
-      // MODIFIED: Set CV and clear any previous errors
+      // Set CV and clear any previous errors
       setCvImage(file);
       setError(""); // Clear error immediately when valid file is selected
       
@@ -129,9 +129,8 @@ const ApplyJobPage = () => {
     }
   };
 
-  // MODIFIED: Handle form submission with IMPROVED validation
+  // Handle form submission with validation
   const handleSubmit = async () => {
-    // MODIFIED: More robust CV validation
     console.log("Submit clicked. CV file:", cvImage); // Debug log
     
     if (!cvImage) {
@@ -160,7 +159,6 @@ const ApplyJobPage = () => {
       formData.append("jobTitle", jobTitle);
       formData.append("cvImage", cvImage);
 
-      // Log what we're sending
       console.log("Sending application with CV:", cvImage.name);
 
       // Add recommendation letters (OPTIONAL)
@@ -199,7 +197,7 @@ const ApplyJobPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900">
-      {/* MODIFIED: Full Image View Modal - MUCH LARGER */}
+      {/* Full Image View Modal */}
       {fullImageView && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-95 z-50 flex items-center justify-center p-4"
@@ -299,12 +297,13 @@ const ApplyJobPage = () => {
             >
               Applied Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/followed-jobs")}
+            >
               Followed Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
-              Messages
-            </button>
+            
             <button className="text-left px-4 py-2 hover:bg-slate-800">
               Query Forum
             </button>
@@ -336,7 +335,7 @@ const ApplyJobPage = () => {
             {/* Error Message */}
             {error && (
               <div className="bg-red-100 border-2 border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 font-semibold">
-                ⚠️ {error}
+                  ⚠️ {error}
               </div>
             )}
 

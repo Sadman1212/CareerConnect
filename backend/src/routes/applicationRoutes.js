@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const applicationController = require("../controllers/applicationController");
 const {
   submitApplication,
   getUserApplications,
@@ -7,7 +8,8 @@ const {
   getCompanyApplications,
   updateApplicationStatus,
   companyDeleteApplication,
-} = require("../controllers/applicationController");
+  sendEmailToApplicant,          // NEW
+} = applicationController;
 
 const { auth, isRole } = require("../middleware/authMiddleware");
 const upload = require("../middleware/upload");
@@ -32,7 +34,9 @@ router.post(
     uploadMiddleware(req, res, (err) => {
       if (err) {
         console.error("Upload error:", err);
-        return res.status(400).json({ error: err.message || "File upload failed" });
+        return res
+          .status(400)
+          .json({ error: err.message || "File upload failed" });
       }
       next();
     });
@@ -54,10 +58,29 @@ router.delete("/:applicationId", auth, isRole("user"), deleteApplication);
 router.get("/company", auth, isRole("company"), getCompanyApplications);
 
 // Update application status
-router.patch("/:applicationId/status", auth, isRole("company"), updateApplicationStatus);
+router.patch(
+  "/:applicationId/status",
+  auth,
+  isRole("company"),
+  updateApplicationStatus
+);
 
 // Delete application (company)
-router.delete("/company/:applicationId", auth, isRole("company"), companyDeleteApplication);
+router.delete(
+  "/company/:applicationId",
+  auth,
+  isRole("company"),
+  companyDeleteApplication
+);
+
+// Send email from company to applicant
+router.post(
+  "/email",
+  auth,
+  isRole("company"),
+  sendEmailToApplicant
+);
 
 module.exports = router;
+
 

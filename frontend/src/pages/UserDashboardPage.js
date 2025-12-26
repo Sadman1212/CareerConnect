@@ -1,5 +1,5 @@
 // src/pages/UserDashboardPage.js
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -13,15 +13,19 @@ const UserDashboardPage = () => {
   const profile = storedProfile ? JSON.parse(storedProfile) : null;
   const token = localStorage.getItem("token");
 
+
   const avatarUrl = profile?.imageUrl || null;
+
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [departmentFilter, setDepartmentFilter] = useState("All");
   const [studentCategoryFilter, setStudentCategoryFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState("Latest"); // Latest | Oldest | Approaching
 
   // 🔍 SEARCH STATE
   const [search, setSearch] = useState("");
@@ -31,9 +35,18 @@ const UserDashboardPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [showDepartmentMenu, setShowDepartmentMenu] = useState(false);
   const [showStudentCategoryMenu, setShowStudentCategoryMenu] = useState(false);
+  const [showDateMenu, setShowDateMenu] = useState(false);
+
+  // NEW: hide-applied filter + user applications
+  const [hideApplied, setHideApplied] = useState(false);
+  const [myApplications, setMyApplications] = useState([]);
+
+  // track which jobs are followed by this user
+  const [followedJobIds, setFollowedJobIds] = useState(new Set());
 
   const fetchNotifications = async () => {
     try {
@@ -78,6 +91,7 @@ const UserDashboardPage = () => {
     navigate("/");
   };
 
+
   const departmentOptions = [
     "All",
     "Any",
@@ -92,11 +106,14 @@ const UserDashboardPage = () => {
     "General education",
   ];
 
+
   const studentCategoryOptions = ["All", "Undergraduate", "Graduate"];
+
 
   const fetchJobs = async () => {
     try {
       setLoading(true);
+
 
       const params = new URLSearchParams();
       if (categoryFilter !== "All") params.append("category", categoryFilter);
@@ -105,12 +122,13 @@ const UserDashboardPage = () => {
       if (studentCategoryFilter !== "All")
         params.append("studentCategory", studentCategoryFilter);
 
-      // 🔍 ADD SEARCH PARAM
-      if (search.trim()) params.append("search", search.trim());
+  // 🔍 ADD SEARCH PARAM
+  if (search && search.trim()) params.append("search", search.trim());
 
       const url = `http://localhost:5000/api/jobs${
         params.toString() ? `?${params.toString()}` : ""
       }`;
+
 
       const res = await axios.get(url);
       setJobs(res.data || []);
@@ -126,9 +144,115 @@ const UserDashboardPage = () => {
     }
   };
 
+  // NEW: fetch user's applications
+  const fetchMyApplications = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await axios.get(
+        "http://localhost:5000/api/applications/user",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMyApplications(res.data || []);
+    } catch (err) {
+      console.error("Failed to load applications", err.response?.data || err);
+    }
+  };
+
+  // fetch jobs the user is already following
+  const fetchFollowedJobs = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await axios.get(
+        "http://localhost:5000/api/jobs/user/followed",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const ids = new Set((res.data || []).map((job) => job._id));
+      setFollowedJobIds(ids);
+    } catch (err) {
+      console.error(
+        "Error fetching followed jobs:",
+        err.response?.data || err.message
+      );
+    }
+  };
+
+  // follow a job
+  const handleFollow = async (jobId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login to follow jobs");
+        return;
+      }
+
+      await axios.post(
+        `http://localhost:5000/api/jobs/${jobId}/follow`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setFollowedJobIds((prev) => new Set(prev).add(jobId));
+    } catch (err) {
+      console.error("Error following job:", err.response?.data || err.message);
+      alert(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Failed to follow job"
+      );
+    }
+  };
+
+  // unfollow a job
+  const handleUnfollow = async (jobId) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login to manage followed jobs");
+        return;
+      }
+
+      await axios.delete(`http://localhost:5000/api/jobs/${jobId}/follow`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setFollowedJobIds((prev) => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+    } catch (err) {
+      console.error(
+        "Error unfollowing job:",
+        err.response?.data || err.message
+      );
+      alert(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Failed to unfollow job"
+      );
+    }
+  };
+
+
   useEffect(() => {
     const run = async () => {
       await fetchJobs();
+      await fetchMyApplications();
+      await fetchFollowedJobs();
     };
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -152,11 +276,50 @@ const UserDashboardPage = () => {
     return () => socket.off("notification");
   }, []);
 
+  // Sort jobs by date (use deadline or createdAt)
+  const sortedJobs = useMemo(() => {
+    const copy = [...jobs];
+    copy.sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+     
+
+      if (dateFilter === "Latest") {
+        return timeB - timeA; // newest first
+      } else if (dateFilter === "Oldest") {
+        return timeA - timeB; // oldest first
+      } else if (dateFilter === "Approaching deadline") {
+        const dA = a.deadline ? new Date(a.deadline).getTime() : Infinity;
+        const dB = b.deadline ? new Date(b.deadline).getTime() : Infinity;
+        return dA - dB;
+      }
+      return 0;
+    });
+    return copy;
+  }, [jobs, dateFilter]);
+
+  // NEW: apply "only not applied" filter on top of sortedJobs
+  // apply "only not applied" filter on top of sortedJobs
+  const visibleJobs = useMemo(() => {
+    if (!hideApplied) return sortedJobs;
+
+    const appliedIds = new Set(
+      (myApplications || []).map((a) =>
+        a.jobId?._id ? a.jobId._id.toString() : a.jobId?.toString()
+      )
+    );
+
+    return sortedJobs.filter((job) => !appliedIds.has(job._id?.toString()));
+  }, [sortedJobs, hideApplied, myApplications]);
+
+
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-900">
       {/* Top bar */}
       <header className="w-full flex items-center justify-between px-8 py-3 bg-slate-900 text-white relative">
         <h1 className="text-2xl font-semibold">CareerConnect</h1>
+
 
         <div className="flex items-center gap-4 relative">
           <div className="flex items-center bg-white rounded-full px-3 py-1">
@@ -255,6 +418,7 @@ const UserDashboardPage = () => {
             ☰
           </button>
 
+
           {menuOpen && (
             <div className="absolute right-0 top-10 bg-white text-gray-800 rounded-md shadow-lg py-2 w-40 z-10">
               <button
@@ -277,6 +441,7 @@ const UserDashboardPage = () => {
         </div>
       </header>
 
+
       <div className="flex flex-1">
         {/* Left sidebar – sticky */}
         <aside className="w-52 bg-slate-900 text-white pt-6 sticky top-0 self-start h-screen">
@@ -298,21 +463,31 @@ const UserDashboardPage = () => {
             </span>
           </div>
 
+
           <nav className="flex flex-col text-sm">
-            <button className="text-left px-4 py-2 bg-indigo-600">Home</button>
+            <button
+              className="text-left px-4 py-2 bg-indigo-600"
+              onClick={() => navigate("/user-dashboard")}
+            >
+              Home
+            </button>
             <button
               className="text-left px-4 py-2 hover:bg-slate-800"
               onClick={() => navigate("/applied-jobs")}
             >
               Applied Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/followed-jobs")}
+            >
               Followed Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
-              Messages
-            </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
+            
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/query-forum")}
+            >
               Query Forum
             </button>
             <button
@@ -321,8 +496,21 @@ const UserDashboardPage = () => {
             >
               Profile
             </button>
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/view-career-events")}
+            >
+              View CareerEvents
+            </button>
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/registered-events")}
+            >
+              Registered Events
+            </button>
           </nav>
         </aside>
+
 
         {/* Main area: job feed */}
         <main className="flex-1 bg-gradient-to-b from-gray-100 to-gray-300 py-8 px-4 md:px-8">
@@ -338,6 +526,7 @@ const UserDashboardPage = () => {
                     setShowCategoryMenu((p) => !p);
                     setShowDepartmentMenu(false);
                     setShowStudentCategoryMenu(false);
+                    setShowDateMenu(false);
                   }}
                 >
                   Filter by Job Category
@@ -345,6 +534,7 @@ const UserDashboardPage = () => {
                     {categoryFilter}
                   </span>
                 </button>
+
 
                 {showCategoryMenu && (
                   <div className="absolute z-20 mt-1 w-40 bg-white rounded-md shadow border text-sm text-gray-700">
@@ -364,6 +554,7 @@ const UserDashboardPage = () => {
                 )}
               </div>
 
+
               {/* Department filter */}
               <div className="relative">
                 <button
@@ -373,6 +564,7 @@ const UserDashboardPage = () => {
                     setShowDepartmentMenu((p) => !p);
                     setShowCategoryMenu(false);
                     setShowStudentCategoryMenu(false);
+                    setShowDateMenu(false);
                   }}
                 >
                   Filter by Department
@@ -380,6 +572,7 @@ const UserDashboardPage = () => {
                     {departmentFilter}
                   </span>
                 </button>
+
 
                 {showDepartmentMenu && (
                   <div className="absolute z-20 mt-1 w-56 bg-white rounded-md shadow border text-sm text-gray-700 max-h-64 overflow-y-auto">
@@ -399,6 +592,7 @@ const UserDashboardPage = () => {
                 )}
               </div>
 
+
               {/* Student Category filter */}
               <div className="relative">
                 <button
@@ -408,13 +602,15 @@ const UserDashboardPage = () => {
                     setShowStudentCategoryMenu((p) => !p);
                     setShowCategoryMenu(false);
                     setShowDepartmentMenu(false);
+                    setShowDateMenu(false);
                   }}
                 >
                   Filter by Student Category
-                  <span className="text-xs bg:white/20 px-2 py-0.5 rounded">
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
                     {studentCategoryFilter}
                   </span>
                 </button>
+
 
                 {showStudentCategoryMenu && (
                   <div className="absolute z-20 mt-1 w-56 bg-white rounded-md shadow border text-sm text-gray-700 max-h-64 overflow-y-auto">
@@ -433,15 +629,63 @@ const UserDashboardPage = () => {
                   </div>
                 )}
               </div>
+
+              {/* Date filter */}
+              <div className="relative">
+                <button
+                  className="bg-indigo-500 text-white px-6 py-2 rounded-md text-sm font-semibold shadow flex items-center gap-2"
+                  type="button"
+                  onClick={() => {
+                    setShowDateMenu((p) => !p);
+                    setShowCategoryMenu(false);
+                    setShowDepartmentMenu(false);
+                    setShowStudentCategoryMenu(false);
+                  }}
+                >
+                  Filter by Date
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
+                    {dateFilter}
+                  </span>
+                </button>
+
+                {showDateMenu && (
+                  <div className="absolute z-20 mt-1 w-52 bg-white rounded-md shadow border text-sm text-gray-700">
+                    {["Latest", "Oldest", "Approaching deadline"].map((opt) => (
+                      <button
+                        key={opt}
+                        className="w-full text-left px-3 py-1.5 hover:bg-gray-100"
+                        onClick={() => {
+                          setDateFilter(opt);
+                          setShowDateMenu(false);
+                        }}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* NEW: Only not applied toggle */}
+              <button
+                type="button"
+                className={`px-4 py-2 rounded-md text-sm font-semibold shadow text-white ${
+                  hideApplied ? "bg-purple-600" : "bg-purple-500/70"
+                }`}
+                onClick={() => setHideApplied((v) => !v)}
+              >
+                Not Applied Jobs
+              </button>
             </div>
+
 
             {loading ? (
               <p className="text-sm text-gray-600">Loading jobs...</p>
-            ) : jobs.length === 0 ? (
+            ) : visibleJobs.length === 0 ? (
               <p className="text-sm text-gray-600">No jobs available.</p>
             ) : (
               <div className="space-y-6">
-                {jobs.map((job) => {
+                {visibleJobs.map((job) => {
                   const companyName =
                     job.company?.companyName ||
                     job.company?.name ||
@@ -451,6 +695,10 @@ const UserDashboardPage = () => {
                     companyName && typeof companyName === "string"
                       ? companyName[0].toUpperCase()
                       : "C";
+
+
+                  const isFollowing = followedJobIds.has(job._id);
+
 
                   return (
                     <div
@@ -483,6 +731,7 @@ const UserDashboardPage = () => {
                           </div>
                         </div>
 
+
                         <div className="flex flex-col gap-2">
                           <button
                             onClick={() =>
@@ -498,11 +747,24 @@ const UserDashboardPage = () => {
                           >
                             Apply
                           </button>
-                          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-1.5 rounded-full text-sm font-semibold shadow">
-                            Follow
-                          </button>
+                          {isFollowing ? (
+                            <button
+                              onClick={() => handleUnfollow(job._id)}
+                              className="bg-gray-400 hover:bg-gray-500 text-white px-6 py-1.5 rounded-full text-sm font-semibold shadow"
+                            >
+                              Following
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleFollow(job._id)}
+                              className="bg-green-600 hover:bg-green-700 text-white px-6 py-1.5 rounded-full text-sm font-semibold shadow"
+                            >
+                              Follow
+                            </button>
+                          )}
                         </div>
                       </div>
+
 
                       {/* job meta + details */}
                       <div className="text-xs md:text-sm text-slate-900 leading-relaxed">
@@ -527,6 +789,7 @@ const UserDashboardPage = () => {
                           </span>
                         </div>
 
+
                         <div className="space-x-4 mt-1">
                           <span>
                             <span className="font-semibold text-pink-700">
@@ -550,12 +813,14 @@ const UserDashboardPage = () => {
                           </span>
                         </div>
 
+
                         <p className="mt-1">
                           <span className="font-semibold text-pink-700">
                             Address:
                           </span>{" "}
                           {job.address}
                         </p>
+
 
                         <p className="mt-3 font-semibold text-pink-700">
                           Job Description
@@ -564,12 +829,14 @@ const UserDashboardPage = () => {
                           {job.description}
                         </div>
 
+
                         <p className="mt-3 font-semibold text-pink-700">
                           Job Requirements
                         </p>
                         <div className="mt-1 bg-slate-50 border border-slate-200 rounded-md p-3 text-xs md:text-sm text-gray-700 whitespace-pre-line">
                           {job.requirements}
                         </div>
+
 
                         <p className="mt-3 font-semibold text-pink-700">
                           Job Benefits
@@ -578,12 +845,14 @@ const UserDashboardPage = () => {
                           {job.benefits}
                         </div>
 
+
                         <p className="mt-3 font-semibold text-pink-700">
                           Job Experience
                         </p>
                         <div className="mt-1 bg-slate-50 border border-slate-200 rounded-md p-3 text-xs md:text-sm text-gray-700 whitespace-pre-line">
                           {job.experience}
                         </div>
+
 
                         <p className="mt-3 font-semibold text-pink-700">
                           Salary Range
@@ -604,4 +873,9 @@ const UserDashboardPage = () => {
   );
 };
 
+
 export default UserDashboardPage;
+
+
+
+

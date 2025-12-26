@@ -22,12 +22,30 @@ import ApplyJobPage from "./pages/ApplyJobPage";
 import AppliedJobsPage from "./pages/AppliedJobsPage";
 import CompanyCandidatesPage from "./pages/CompanyCandidatesPage";
 import JobApplicantsPage from "./pages/JobApplicantsPage";
+import FollowedJobsPage from "./pages/FollowedJobsPage";
+
+// Career events pages (Company side)
+import AddCareerEventPage from "./pages/AddCareerEventPage";
+import PostedCareerEventsPage from "./pages/PostedCareerEventsPage";
+
+// Career events pages (User side)
+import ViewCareerEventsPage from "./pages/ViewCareerEventsPage";
+import RegisterEventPage from "./pages/RegisterEventPage";
+import VerifyEventRegistrationPage from "./pages/VerifyEventRegistrationPage";
+import RegisteredEventsPage from "./pages/RegisteredEventsPage"; // ✅ NEW
 
 // Admin pages
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminPanelPage from "./pages/AdminPanelPage";
 import SearchPage from "./pages/SearchPage";
 import CompanySearchPage from "./pages/CompanySearchPage";
+
+// Query Forum page
+// Query Forum page
+import QueryForumPage from "./pages/QueryForumPage";
+import CompanyQueryForumPage from "./pages/CompanyQueryForumPage";
+
+
 
 function App() {
   return (
@@ -52,12 +70,52 @@ function App() {
 
           {/* Company application/job routes */}
           <Route path="/company/candidates" element={<CompanyCandidatesPage />} />
-          <Route path="/company/jobs/:jobId/applicants" element={<JobApplicantsPage />} />
+          <Route
+            path="/company/jobs/:jobId/applicants"
+            element={<JobApplicantsPage />}
+          />
           <Route path="/company/jobs/new" element={<AddJobPage />} />
           <Route path="/apply-job/:jobId" element={<ApplyJobPage />} />
           <Route path="/applied-jobs" element={<AppliedJobsPage />} />
+          <Route path="/followed-jobs" element={<FollowedJobsPage />} />
           <Route path="/company/jobs/:id/edit" element={<EditJobPage />} />
           <Route path="/company/posted-jobs" element={<PostedJobsPage />} />
+          {/* Query forum */}
+          <Route path="/query-forum" element={<QueryForumPage />} />
+          <Route path="/company-query-forum" element={<CompanyQueryForumPage />} />
+
+          {/* Company career-events routes */}
+          <Route
+            path="/company/career-events/new"
+            element={<AddCareerEventPage />}
+          />
+          <Route
+            path="/company/career-events/:id/edit"
+            element={<AddCareerEventPage />}
+          />
+          <Route
+            path="/company/posted-career-events"
+            element={<PostedCareerEventsPage />}
+          />
+
+          {/* User career-events routes */}
+          <Route
+            path="/view-career-events"
+            element={<ViewCareerEventsPage />}
+          />
+          <Route
+            path="/register-event/:eventId"
+            element={<RegisterEventPage />}
+          />
+          <Route
+            path="/verify-event-registration"
+            element={<VerifyEventRegistrationPage />}
+          />
+          {/* ✅ NEW: Registered Events route */}
+          <Route
+            path="/registered-events"
+            element={<RegisteredEventsPage />}
+          />
 
           {/* Admin routes */}
           <Route path="/admin-dashboard" element={<AdminDashboardPage />} />

@@ -23,12 +23,9 @@ const LoginPage = () => {
     try {
       let url = "";
 
-      // Admin login
       if (form.role === "admin") {
         url = `${API_BASE_URL}/admin/login`;
-      }
-      // User / Company login
-      else {
+      } else {
         url = `${API_BASE_URL}/auth/login`;
       }
 
@@ -50,19 +47,18 @@ const LoginPage = () => {
         return;
       }
 
-      // Save token
       localStorage.setItem("token", data.token);
 
-      // Save profile
       if (form.role === "admin" && data.admin) {
+        console.log("saved admin profile", data.admin);
         localStorage.setItem("profile", JSON.stringify(data.admin));
       } else if (data.profile) {
+        console.log("saved user/company profile", data.profile);
         localStorage.setItem("profile", JSON.stringify(data.profile));
       }
 
       setLoading(false);
 
-      // Redirect
       if (form.role === "admin") {
         navigate("/admin-dashboard");
       } else if (data.profile?.role === "company") {
@@ -106,6 +102,7 @@ const LoginPage = () => {
         localStorage.setItem("token", data.token);
 
         if (data.profile) {
+          console.log("saved google profile", data.profile);
           localStorage.setItem("profile", JSON.stringify(data.profile));
         }
 
@@ -147,7 +144,6 @@ const LoginPage = () => {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Role selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Login as
@@ -214,7 +210,6 @@ const LoginPage = () => {
             </button>
           </form>
 
-          {/* Google login */}
           <div className="mt-6 flex flex-col items-center">
             <span className="text-sm text-gray-500 mb-2">Or</span>
             <button
@@ -235,3 +230,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

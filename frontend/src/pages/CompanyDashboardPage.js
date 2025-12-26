@@ -5,22 +5,23 @@ import axios from "axios";
 import { io } from "socket.io-client";
 const socket = io("http://localhost:5000", { transports: ["websocket"] });
 
+
 const CompanyDashboardPage = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const storedProfile = localStorage.getItem("profile");
   const profile = storedProfile ? JSON.parse(storedProfile) : null;
 
+  // UI state
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const avatarUrl = profile?.imageUrl || null;
+
   // 🔔 NOTIFICATION STATE
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  const avatarUrl = profile?.imageUrl || null;
-
-  // 🔔 NOTIFICATION FUNCTIONS
   const fetchNotifications = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/notifications", {
@@ -62,19 +63,15 @@ const CompanyDashboardPage = () => {
     if (!token) navigate("/login");
   }, [token, navigate]);
 
-  // 🔔 FETCH NOTIFICATIONS ON MOUNT
   useEffect(() => {
     fetchNotifications();
     fetchUnreadCount();
   }, []);
 
-  // 🔔 SOCKET NOTIFICATIONS
   useEffect(() => {
     socket.on("notification", async (data) => {
-      // Fetch fresh notifications and unread count
       await fetchNotifications();
       await fetchUnreadCount();
-      // Show browser alert
       alert(`🔔 ${data.title}\n${data.message}`);
     });
 
@@ -84,7 +81,7 @@ const CompanyDashboardPage = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("profile");
-    navigate("/"); // redirect to homepage
+    navigate("/");
   };
 
   return (
@@ -120,48 +117,25 @@ const CompanyDashboardPage = () => {
               )}
             </button>
 
-            {/* Notification Popup */}
             {notificationOpen && (
               <div className="absolute right-0 top-12 w-80 bg-white text-gray-800 rounded-md shadow-xl border border-gray-200 z-20 max-h-96 overflow-y-auto">
                 <div className="sticky top-0 bg-indigo-500 text-white px-4 py-3 flex justify-between items-center">
                   <h3 className="font-semibold">Notifications</h3>
-                  <span
-                    className="cursor-pointer text-lg"
-                    onClick={() => setNotificationOpen(false)}
-                  >
-                    ✕
-                  </span>
+                  <span className="cursor-pointer text-lg" onClick={() => setNotificationOpen(false)}>✕</span>
                 </div>
-
                 {notifications.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-gray-500">
-                    No notifications yet
-                  </div>
+                  <div className="px-4 py-6 text-center text-gray-500">No notifications yet</div>
                 ) : (
                   <div className="divide-y">
                     {notifications.map((notif) => (
-                      <div
-                        key={notif._id}
-                        className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition ${
-                          !notif.isRead ? "bg-indigo-50" : ""
-                        }`}
-                        onClick={() => markAsRead(notif._id)}
-                      >
+                      <div key={notif._id} className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition ${!notif.isRead ? "bg-indigo-50" : ""}`} onClick={() => markAsRead(notif._id)}>
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <p className="font-semibold text-sm">
-                              {notif.title}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-1">
-                              {notif.message}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-2">
-                              {new Date(notif.createdAt).toLocaleDateString()}
-                            </p>
+                            <p className="font-semibold text-sm">{notif.title}</p>
+                            <p className="text-xs text-gray-600 mt-1">{notif.message}</p>
+                            <p className="text-xs text-gray-400 mt-2">{new Date(notif.createdAt).toLocaleDateString()}</p>
                           </div>
-                          {!notif.isRead && (
-                            <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1 ml-2" />
-                          )}
+                          {!notif.isRead && <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1 ml-2" />}
                         </div>
                       </div>
                     ))}
@@ -172,42 +146,16 @@ const CompanyDashboardPage = () => {
           </div>
 
           {/* 📅 GOOGLE CALENDAR BUTTON */}
-          <a
-            href="https://calendar.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xl hover:opacity-80 transition"
-            title="Open Google Calendar"
-          >
-            📅
-          </a>
+          <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="text-xl hover:opacity-80 transition" title="Open Google Calendar">📅</a>
 
           {/* menu button */}
-          <button
-            className="text-2xl font-bold relative"
-            onClick={() => setMenuOpen((prev) => !prev)}
-          >
-            ☰
-          </button>
+          <button className="text-2xl font-bold relative" onClick={() => setMenuOpen((prev) => !prev)}>☰</button>
 
           {/* dropdown */}
           {menuOpen && (
             <div className="absolute right-0 top-10 bg-white text-gray-800 rounded-md shadow-lg py-2 w-40 z-10">
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate("/change-password");
-                }}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-              >
-                Change password
-              </button>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-              >
-                Logout
-              </button>
+              <button onClick={() => { setMenuOpen(false); navigate("/company-change-password"); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Change password</button>
+              <button onClick={() => { setMenuOpen(false); handleLogout(); }} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Logout</button>
             </div>
           )}
         </div>
@@ -218,64 +166,21 @@ const CompanyDashboardPage = () => {
         <aside className="w-56 bg-slate-900 text-white pt-6">
           <div className="flex flex-col items-center mb-6">
             {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Company"
-                className="w-16 h-16 rounded-md bg-slate-700 mb-2 object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
+              <img src={avatarUrl} alt="Company" className="w-16 h-16 rounded-md bg-slate-700 mb-2 object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
             ) : (
               <div className="w-16 h-16 rounded-md bg-slate-700 mb-2" />
             )}
-            <span className="text-xs text-gray-300">
-              {profile?.companyName || profile?.name || "Company"}
-            </span>
+            <span className="text-xs text-gray-300">{profile?.companyName || profile?.name || "Company"}</span>
           </div>
 
           <nav className="flex flex-col text-sm">
-            {/* stay on dashboard */}
-            <button
-              className="text-left px-4 py-2 bg-indigo-600"
-              onClick={() => navigate("/company-dashboard")}
-            >
-              Dashboard
-            </button>
-
-            {/* go to posted jobs page */}
-            <button
-              className="text-left px-4 py-2 hover:bg-slate-800"
-              onClick={() => navigate("/company/posted-jobs")}
-            >
-              Posted Jobs
-            </button>
-
-            {/* go to candidate list page */}
-            <button
-              className="text-left px-4 py-2 hover:bg-slate-800"
-              onClick={() => navigate("/company/candidates")}
-            >
-              Candidate list
-            </button>
-
-            <button
-              className="text-left px-4 py-2 hover:bg-slate-800"
-              onClick={() => navigate("/company/messages")}
-            >
-              Messages
-            </button>
-
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
-              Query Forum
-            </button>
-
-            <button
-              className="text-left px-4 py-2 hover:bg-slate-800"
-              onClick={() => navigate(`/company/${profile?.id || profile?._id}`)}
-            >
-              Profile
-            </button>
+            <button className="text-left px-4 py-2 bg-indigo-600" onClick={() => navigate("/company-dashboard")}>Dashboard</button>
+            <button className="text-left px-4 py-2 hover:bg-slate-800" onClick={() => navigate("/company/posted-jobs")}>Posted Jobs</button>
+            <button className="text-left px-4 py-2 hover:bg-slate-800" onClick={() => navigate("/company/candidates")}>Candidate list</button>
+           
+            <button className="text-left px-4 py-2 hover:bg-slate-800" onClick={() => navigate("/company-query-forum")}>Query Forum</button>
+            <button className="text-left px-4 py-2 hover:bg-slate-800" onClick={() => navigate(`/company/${profile?.id || profile?._id}`)}>Profile</button>
+            <button className="text-left px-4 py-2 hover:bg-slate-800" onClick={() => navigate("/company/posted-career-events")}>Posted CareerEvents</button>
           </nav>
         </aside>
 
@@ -284,21 +189,14 @@ const CompanyDashboardPage = () => {
           <div className="w-full mt-6 px-6">
             <div className="bg-white shadow-lg rounded-md p-6 flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-semibold mb-1">
-                  Welcome to Dashboard
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Start Your Journey by sharing your first post!
-                </p>
+                <h2 className="text-xl font-semibold mb-1">Welcome to Dashboard</h2>
+                <p className="text-sm text-gray-600">Start Your Journey by sharing your first post!</p>
               </div>
 
-              {/* navigate to Add Job page */}
-              <button
-                className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow"
-                onClick={() => navigate("/company/jobs/new")}
-              >
-                Add Job post
-              </button>
+              <div className="flex gap-3">
+                <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-md shadow" onClick={() => navigate("/company/career-events/new")}>Add CareerEvents</button>
+                <button className="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow" onClick={() => navigate("/company/jobs/new")}>Add Job post</button>
+              </div>
             </div>
           </div>
         </main>
@@ -308,7 +206,3 @@ const CompanyDashboardPage = () => {
 };
 
 export default CompanyDashboardPage;
-
-
-
-

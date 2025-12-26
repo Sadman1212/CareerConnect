@@ -1,3 +1,4 @@
+// frontend/src/pages/UserProfilePage.js
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
@@ -371,12 +372,12 @@ const UserProfilePage = () => {
     }
   };
 
-  // ✅ NEW: Open PDF in new tab
+  // Open PDF in new tab
   const openPdfInNewTab = (pdfUrl) => {
     window.open(pdfUrl, '_blank', 'noopener,noreferrer');
   };
 
-  // ✅ UPDATED: Open image viewer
+  // Open image viewer
   const openImageViewer = (imageUrl, title) => {
     setImageViewer({
       isOpen: true,
@@ -393,7 +394,7 @@ const UserProfilePage = () => {
     });
   };
 
-  // ✅ NEW: Check if file is PDF
+  // Check if file is PDF
   const isPdfFile = (url) => {
     if (!url) return false;
     return url.toLowerCase().endsWith('.pdf');
@@ -557,17 +558,32 @@ const UserProfilePage = () => {
             >
               Applied Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/followed-jobs")}
+            >
               Followed Jobs
             </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
-              Messages
-            </button>
-            <button className="text-left px-4 py-2 hover:bg-slate-800">
+            
+            <button className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/query-forum")}
+            >
               Query Forum
             </button>
             <button className="text-left px-4 py-2 bg-indigo-600">
               Profile
+            </button>
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/view-career-events")}
+            >
+              View CareerEvents
+            </button>
+            <button
+              className="text-left px-4 py-2 hover:bg-slate-800"
+              onClick={() => navigate("/registered-events")}
+            >
+              Registered Events
             </button>
           </nav>
         </aside>
@@ -637,13 +653,13 @@ const UserProfilePage = () => {
 
                 {isEditing && (
                   <label className="mt-3 bg-red-600 text-white px-4 py-2 rounded-md cursor-pointer hover:bg-red-700 transition font-semibold">
-                    Change Photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleFileChange(e, "profilePhoto")}
-                    />
+                      Change Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleFileChange(e, "profilePhoto")}
+                      />
                   </label>
                 )}
               </div>
@@ -879,7 +895,7 @@ const UserProfilePage = () => {
                 )}
               </div>
 
-              {/* ✅ MODIFIED: File Uploads Section - SHOWS EXISTING FILES IN EDIT MODE */}
+              {/* File Uploads Section */}
               <div className="grid grid-cols-2 gap-6 mb-6">
                 {/* Certificate Upload */}
                 <div>
@@ -1050,7 +1066,7 @@ const UserProfilePage = () => {
                 </div>
               </div>
 
-              {/* Links Section */}
+              {/* Links Section - FIXED VERSION */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
                   <label className="block text-sm font-semibold mb-1 flex items-center gap-2">
@@ -1065,13 +1081,20 @@ const UserProfilePage = () => {
                       placeholder="https://github.com/yourusername/project"
                       className="w-full px-3 py-2 border rounded-md"
                     />
+                  ) : profile.projectLink ? (
+                    <a
+                      href={profile.projectLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full px-3 py-2 border rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition break-all"
+                      style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
+                    >
+                      {profile.projectLink}
+                    </a>
                   ) : (
-                    <input
-                      type="text"
-                      value={profile.projectLink || ""}
-                      disabled
-                      className="w-full px-3 py-2 border rounded-md bg-gray-50"
-                    />
+                    <div className="w-full px-3 py-2 border rounded-md bg-gray-50 text-gray-400">
+                      No project link provided
+                    </div>
                   )}
                 </div>
 
@@ -1088,13 +1111,20 @@ const UserProfilePage = () => {
                       placeholder="https://linkedin.com/in/yourprofile"
                       className="w-full px-3 py-2 border rounded-md"
                     />
+                  ) : profile.linkedinLink ? (
+                    <a
+                      href={profile.linkedinLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full px-3 py-2 border rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 transition break-all"
+                      style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}
+                    >
+                      {profile.linkedinLink}
+                    </a>
                   ) : (
-                    <input
-                      type="text"
-                      value={profile.linkedinLink || ""}
-                      disabled
-                      className="w-full px-3 py-2 border rounded-md bg-gray-50"
-                    />
+                    <div className="w-full px-3 py-2 border rounded-md bg-gray-50 text-gray-400">
+                      No LinkedIn link provided
+                    </div>
                   )}
                 </div>
               </div>

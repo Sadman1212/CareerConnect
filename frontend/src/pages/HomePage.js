@@ -10,29 +10,16 @@ const HomePage = () => {
       {/* Top navbar */}
       <header className="w-full bg-blue-900 text-white flex justify-between items-center px-10 py-4 shadow-md">
         <h1 className="text-2xl font-semibold">CareerConnect</h1>
-        
-        <div className="flex items-center gap-6">
-          {/* Search box */}
-          <div className="flex items-center bg-white rounded-full px-3 py-1">
-            <span className="text-gray-500 mr-2">🔍</span>
-            <input
-              type="text"
-              placeholder="Search companies..."
-              onFocus={() => window.open('/search', '_blank')}
-              className="bg-transparent outline-none text-sm text-gray-700 w-40 cursor-text"
-            />
-          </div>
-          
-          <nav className="space-x-6 text-sm">
-            <button className="hover:text-gray-300">Contact Us</button>
-            <button
-              onClick={() => navigate("/about")}
-              className="hover:text-gray-300"
-            >
-              About Us
-            </button>
-          </nav>
-        </div>
+
+        <nav className="space-x-6 text-sm">
+          <button className="hover:text-gray-300">Contact Us</button>
+          <button
+            onClick={() => navigate("/about")}
+            className="hover:text-gray-300"
+          >
+            About Us
+          </button>
+        </nav>
       </header>
 
       <main

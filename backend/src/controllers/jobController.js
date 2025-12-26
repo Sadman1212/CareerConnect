@@ -1,4 +1,5 @@
 const Job = require("../models/JobModel");
+const User = require("../models/User"); // follow feature
 
 // ===============================
 // POST /api/jobs  (company creates job)
@@ -231,6 +232,105 @@ exports.deleteJob = async (req, res) => {
     res.json({ message: "Job deleted" });
   } catch (err) {
     console.error("Delete job error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+/* =========================================
+   NEW: FOLLOWED JOBS FEATURE
+   ========================================= */
+
+// POST /api/jobs/:id/follow  (user follows a job)
+exports.followJob = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const jobId = req.params.id;
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const alreadyFollowing = user.followedJobs.some(
+      (jid) => jid.toString() === jobId
+    );
+    if (alreadyFollowing) {
+      return res.status(200).json({ message: "Already following this job" });
+    }
+
+    user.followedJobs.push(jobId);
+    await user.save();
+
+    res.status(201).json({ message: "Job followed successfully" });
+  } catch (err) {
+    console.error("Follow job error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// DELETE /api/jobs/:id/follow  (user unfollows a job)
+exports.unfollowJob = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const jobId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const beforeCount = user.followedJobs.length;
+    user.followedJobs = user.followedJobs.filter(
+      (jid) => jid.toString() !== jobId
+    );
+
+    if (user.followedJobs.length === beforeCount) {
+      return res.status(404).json({ error: "Job was not followed" });
+    }
+
+    await user.save();
+
+    res.json({ message: "Job unfollowed successfully" });
+  } catch (err) {
+    console.error("Unfollow job error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// GET /api/jobs/user/followed  (list of jobs user is following)
+exports.getFollowedJobsForUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId).populate({
+      path: "followedJobs",
+      populate: {
+        path: "company",
+        select: "companyName name imageUrl",
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Sort followed jobs alphabetically by title
+    const jobs = [...user.followedJobs].sort((a, b) => {
+      const t1 = (a.title || "").toLowerCase();
+      const t2 = (b.title || "").toLowerCase();
+      if (t1 < t2) return -1;
+      if (t1 > t2) return 1;
+      return 0;
+    });
+
+    res.json(jobs);
+  } catch (err) {
+    console.error("Get followed jobs error:", err);
     res.status(500).json({ error: "Server error" });
   }
 };

@@ -1,4 +1,4 @@
-// backend/routes/jobRoutes.js
+// backend/src/routes/jobRoutes.js
 const express = require("express");
 const router = express.Router();
 const { auth, isRole } = require("../middleware/authMiddleware");
@@ -9,6 +9,9 @@ const {
   updateJob,
   deleteJob,
   getAllJobsForUsers,
+  followJob,
+  unfollowJob,
+  getFollowedJobsForUser,
 } = require("../controllers/jobController");
 
 // ==============================
@@ -28,14 +31,26 @@ router.delete("/:id", auth, isRole("company"), deleteJob);
 router.get("/company", auth, isRole("company"), getCompanyJobs);
 
 // ==============================
+// USER FOLLOW ROUTES
+// ==============================
+
+// Follow a job
+router.post("/:id/follow", auth, isRole("user"), followJob);
+
+// Unfollow a job
+router.delete("/:id/follow", auth, isRole("user"), unfollowJob);
+
+// Get all followed jobs for logged-in user
+router.get("/user/followed", auth, isRole("user"), getFollowedJobsForUser);
+
+// ==============================
 // PUBLIC / USER ROUTES
 // ==============================
 
-// Get all jobs for users (optional filters: ?category=&department=)
+// Get all jobs for users (optional filters: ?category=&department=&studentCategory=)
 router.get("/", getAllJobsForUsers);
 
 // Get single job by ID (requires auth, any user or company)
 router.get("/:id", auth, getJobById);
 
 module.exports = router;
-

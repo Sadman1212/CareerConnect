@@ -1,4 +1,4 @@
-// backend/middleware/authMiddleware.js
+// backend/src/middleware/authMiddleware.js
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -19,7 +19,9 @@ const auth = (req, res, next) => {
     req.user = decoded; // attach decoded user info
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid token", error: err.message });
+    return res
+      .status(401)
+      .json({ message: "Invalid token", error: err.message });
   }
 };
 
@@ -32,4 +34,7 @@ const isRole = (...allowedRoles) => {
   };
 };
 
-module.exports = { auth, isRole };
+// ✅ alias used by routes (protect = auth)
+const protect = auth;
+
+module.exports = { auth, isRole, protect };
